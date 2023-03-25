@@ -63,6 +63,23 @@ func (u *User) Offline() {
 	u.server.Broadcast(u, "Offline")
 }
 
+func (u *User) SendMsg(msg string) {
+	_, err := u.conn.Write([]byte(msg))
+	if err != nil {
+		fmt.Println("Conn Write err:", err.Error())
+		return
+	}
+}
+
 func (u *User) DoMessage(msg string) {
-	u.server.Broadcast(u, msg)
+	if msg == "who" {
+		u.server.mapLock.Lock()
+		for _, user := range u.server.OnlineMap {
+			onlineMsg := fmt.Sprintf("[%s]%s:Online...\n", user.Addr, user.Name)
+			u.SendMsg(onlineMsg)
+		}
+		u.server.mapLock.Unlock()
+	} else {
+		u.server.Broadcast(u, msg)
+	}
 }
