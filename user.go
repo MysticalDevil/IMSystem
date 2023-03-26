@@ -75,58 +75,70 @@ func (u *User) SendMsg(msg string) {
 func (u *User) DoMessage(msg string) {
 	// online user query
 	if msg == "who" {
-		u.server.mapLock.Lock()
-		for _, user := range u.server.OnlineMap {
-			onlineMsg := fmt.Sprintf("[%s]%s:Online...\n", user.Addr, user.Name)
-			u.SendMsg(onlineMsg)
-		}
-		u.server.mapLock.Unlock()
+		u.UserList()
 		return
 	}
 	// rename username
 	if len(msg) > 7 && msg[:7] == "rename|" {
-		// message format: rename|username
-		newName := strings.Split(msg, "|")[1]
-
-		if _, ok := u.server.OnlineMap[newName]; ok {
-			u.SendMsg("Current username is taken")
-			return
-		}
-
-		u.server.mapLock.Lock()
-
-		delete(u.server.OnlineMap, u.Name)
-		u.server.OnlineMap[newName] = u
-
-		u.Name = newName
-		u.SendMsg("You have updated your username: " + u.Name + ".\n")
-
-		u.server.mapLock.Unlock()
-
+		u.RenameUser(msg)
 		return
 	}
 	// private chat
 	if len(msg) > 4 && msg[:3] == "to|" {
-		// message format: to|username
-		remoteName := strings.Split(msg, "|")[1]
-		if remoteName == "" {
-			u.SendMsg("The message is not correct, please use \"to|username|message.\" \n")
-			return
-		}
-
-		remoteUser, ok := u.server.OnlineMap[remoteName]
-		if !ok {
-			u.SendMsg("User does not exist yet.\n")
-			return
-		}
-
-		content := strings.Split(msg, "|")[2]
-		if content == "" {
-			u.SendMsg("No messages, please resend.\n")
-			return
-		}
-		remoteUser.SendMsg(u.Name + " send to you: " + content)
+		u.PrivateChat(msg)
+		return
 	}
 
 	u.server.Broadcast(u, msg)
+}
+
+func (u *User) UserList() {
+	u.server.mapLock.Lock()
+	for _, user := range u.server.OnlineMap {
+		onlineMsg := fmt.Sprintf("[%s]%s:Online...\n", user.Addr, user.Name)
+		u.SendMsg(onlineMsg)
+	}
+	u.server.mapLock.Unlock()
+}
+
+func (u *User) RenameUser(msg string) {
+	// message format: rename|username
+	newName := strings.Split(msg, "|")[1]
+
+	if _, ok := u.server.OnlineMap[newName]; ok {
+		u.SendMsg("Current username is taken")
+		return
+	}
+
+	u.server.mapLock.Lock()
+
+	delete(u.server.OnlineMap, u.Name)
+	u.server.OnlineMap[newName] = u
+
+	u.Name = newName
+	u.SendMsg("You have updated your username: " + u.Name + ".\n")
+
+	u.server.mapLock.Unlock()
+}
+
+func (u *User) PrivateChat(msg string) {
+	// message format: to|username
+	remoteName := strings.Split(msg, "|")[1]
+	if remoteName == "" {
+		u.SendMsg("The message is not correct, please use \"to|username|message.\" \n")
+		return
+	}
+
+	remoteUser, ok := u.server.OnlineMap[remoteName]
+	if !ok {
+		u.SendMsg("User does not exist yet.\n")
+		return
+	}
+
+	content := strings.Split(msg, "|")[2]
+	if content == "" {
+		u.SendMsg("No messages, please resend.\n")
+		return
+	}
+	remoteUser.SendMsg(u.Name + " send to you: " + content)
 }
