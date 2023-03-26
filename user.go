@@ -73,6 +73,7 @@ func (u *User) SendMsg(msg string) {
 }
 
 func (u *User) DoMessage(msg string) {
+	// online user query
 	if msg == "who" {
 		u.server.mapLock.Lock()
 		for _, user := range u.server.OnlineMap {
@@ -80,8 +81,11 @@ func (u *User) DoMessage(msg string) {
 			u.SendMsg(onlineMsg)
 		}
 		u.server.mapLock.Unlock()
-	} else if len(msg) > 7 && msg[:7] == "rename|" {
-		// message format: rename|Name
+		return
+	}
+	// rename username
+	if len(msg) > 7 && msg[:7] == "rename|" {
+		// message format: rename|username
 		newName := strings.Split(msg, "|")[1]
 
 		if _, ok := u.server.OnlineMap[newName]; ok {
@@ -95,11 +99,34 @@ func (u *User) DoMessage(msg string) {
 		u.server.OnlineMap[newName] = u
 
 		u.Name = newName
-		u.SendMsg("You have updated your username: " + u.Name + "\n")
+		u.SendMsg("You have updated your username: " + u.Name + ".\n")
 
 		u.server.mapLock.Unlock()
 
-	} else {
-		u.server.Broadcast(u, msg)
+		return
 	}
+	// private chat
+	if len(msg) > 4 && msg[:3] == "to|" {
+		// message format: to|username
+		remoteName := strings.Split(msg, "|")[1]
+		if remoteName == "" {
+			u.SendMsg("The message is not correct, please use \"to|username|message.\" \n")
+			return
+		}
+
+		remoteUser, ok := u.server.OnlineMap[remoteName]
+		if !ok {
+			u.SendMsg("User does not exist yet.\n")
+			return
+		}
+
+		content := strings.Split(msg, "|")[2]
+		if content == "" {
+			u.SendMsg("No messages, please resend.\n")
+			return
+		}
+		remoteUser.SendMsg(u.Name + " send to you: " + content)
+	}
+
+	u.server.Broadcast(u, msg)
 }

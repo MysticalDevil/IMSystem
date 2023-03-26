@@ -90,7 +90,7 @@ func (s *Server) Handler(conn net.Conn) {
 		// the current user ia active and the timer should be reset
 		// do nothing, update the timer below in order to activate the select
 
-		case <-time.After(time.Second * 10):
+		case <-time.After(time.Minute * 10):
 			// has timed out, force the curent client to close
 			user.SendMsg("You are banned")
 
