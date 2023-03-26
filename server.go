@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -52,7 +53,12 @@ func (s *Server) Broadcast(user *User, msg string) {
 
 func (s *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, s)
+
 	user.Online()
+
+	// a channel that monitors whether the user is active
+	isLive := make(chan bool)
+
 	// receive messages from users
 	go func() {
 		buf := make([]byte, 4096)
@@ -71,11 +77,33 @@ func (s *Server) Handler(conn net.Conn) {
 			// receive users messages
 			msg := string(buf[:n-1])
 			user.DoMessage(msg)
+
+			// any message of the user, active on behalf of the current user
+			isLive <- true
 		}
 	}()
 
 	// current handler is blocked
-	select {}
+	for {
+		select {
+		case <-isLive:
+		// the current user ia active and the timer should be reset
+		// do nothing, update the timer below in order to activate the select
+
+		case <-time.After(time.Second * 10):
+			// has timed out, force the curent client to close
+			user.SendMsg("You are banned")
+
+			// destroy resources
+			close(user.C)
+
+			// close connection
+			conn.Close()
+
+			// exit current handler
+			return // runtime.Goexit()
+		}
+	}
 }
 
 func (s *Server) Start() {
