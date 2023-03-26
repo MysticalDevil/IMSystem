@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 )
@@ -29,8 +30,19 @@ func NewClient(serverIP string, serverPort int) *Client {
 	return client
 }
 
+var serverIP string
+var serverPort int
+
+// client -ip 127.0.0.1
+func init() {
+	flag.StringVar(&serverIP, "ip", "127.0.0.1", "Set server ip address")
+	flag.IntVar(&serverPort, "port", 8888, "Set server port")
+}
+
 func main() {
-	client := NewClient("127.0.0.1", 8888)
+	flag.Parse()
+
+	client := NewClient(serverIP, serverPort)
 	if client == nil {
 		fmt.Println(">>>>>>>> Connection failure...")
 		return
