@@ -91,17 +91,20 @@ func (s *Server) Handler(conn net.Conn) {
 		// do nothing, update the timer below in order to activate the select
 
 		case <-time.After(time.Minute * 10):
-			// has timed out, force the curent client to close
+			// has timed out, force the current client to close
 			user.SendMsg("You are banned")
 
 			// destroy resources
 			close(user.C)
 
 			// close connection
-			conn.Close()
+			err := conn.Close()
+			if err != nil {
+				return
+			}
 
 			// exit current handler
-			return // runtime.Goexit()
+			return
 		}
 	}
 }

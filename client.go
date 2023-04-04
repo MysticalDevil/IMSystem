@@ -35,20 +35,20 @@ func NewClient(serverIP string, serverPort int) *Client {
 }
 
 func (c *Client) menu() bool {
-	var flag int
+	var _flag int
 
 	fmt.Println("1. Public chat")
 	fmt.Println("2. Private chat")
 	fmt.Println("3. Rename")
 	fmt.Println("0. Exit")
 
-	_, err := fmt.Scanln(&flag)
+	_, err := fmt.Scanln(&_flag)
 	if err != nil {
 		fmt.Println("fmt.Scanln err:", err.Error())
 	}
 
-	if flag >= 0 && flag <= 3 {
-		c.flag = flag
+	if _flag >= 0 && _flag <= 3 {
+		c.flag = _flag
 		return true
 	}
 	fmt.Println(">>>>>>>> Please enter legal range. <<<<<<<<")
